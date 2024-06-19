@@ -1,14 +1,20 @@
 import cx_Oracle
 
 def execute_sql_script(file_path, connection):
-    try:
-        cursor = connection.cursor()
-        with open(file_path, 'r') as file:
-            sql_script = file.read()
-        cursor.execute(sql_script)
-        connection.commit()
-    except cx_Oracle.Error as error:
-        print(f"Erro ao executar o script SQL: {error}")
-    finally:
-        if cursor:
-            cursor.close()
+    cursor = connection.cursor()
+    
+    with open(file_path, 'r') as file:
+        sql_script = file.read()
+
+    sql_commands = sql_script.split('/')
+    
+    for command in sql_commands:
+        if command.strip():
+            try:
+                cursor.execute(command)
+                connection.commit()
+                print(f"Executed command: {command.strip()[:30]}...")
+            except cx_Oracle.DatabaseError as e:
+                error, = e.args
+                print(f"Failed to execute command: {command.strip()[:30]}...\nError: {error.message}")
+                connection.rollback()
