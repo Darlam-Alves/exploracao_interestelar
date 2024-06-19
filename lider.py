@@ -1,0 +1,2 @@
+import cx_Oracle
+from common import execute_sql_script
