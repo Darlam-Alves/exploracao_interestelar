@@ -1,206 +1,125 @@
-------------------------------------------------------- 3.b Inserir nova dominancia ---------------------------------------------
-CREATE OR REPLACE PROCEDURE INSERT_DOMINANCIA (
-    p_planeta dominancia.PLANETA%TYPE,
-    p_nacao dominancia.NACAO%TYPE,
-    p_data_ini dominancia.DATA_INI%TYPE,
-    p_data_fim dominancia.DATA_FIM%TYPE
-) AS
-    v_count NUMBER;
+-- Criação do pacote pacote_comandante
+CREATE OR REPLACE PACKAGE pacote_comandante AS
+    -- Procedure para buscar a nação de um comandante pelo CPI
+    PROCEDURE buscar_nacao_comandante(
+        p_cpi IN LIDER.CPI%TYPE,
+        p_nacao OUT LIDER.NACAO%TYPE
+    );
 
-    -- Exceções personalizadas
-    ex_planeta_nao_encontrado EXCEPTION;
-    PRAGMA EXCEPTION_INIT(ex_planeta_nao_encontrado, -20001);
-  
-    ex_planeta_ja_dominado EXCEPTION;
-    PRAGMA EXCEPTION_INIT(ex_planeta_ja_dominado, -20002);
-   
-    ex_nacao_nao_encontrada EXCEPTION;
-    PRAGMA EXCEPTION_INIT(ex_nacao_nao_encontrada, -20003);
-BEGIN
-    -- Verificar se o planeta existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM PLANETA
-    WHERE ID_ASTRO = p_planeta;
+    -- Procedure para remover a federação de uma nação
+    PROCEDURE remover_federacao (
+        p_nacao IN NACAO.NOME%TYPE
+    );
 
-    IF v_count = 0 THEN
-        RAISE ex_planeta_nao_encontrado;
-    END IF;
-   
-       -- Verificar se a nação existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM NACAO
-    WHERE NOME = p_nacao;
+    -- Procedure para inserir dominância de um planeta por uma nação
+    PROCEDURE inserir_dominancia (
+        p_planeta IN PLANETA.ID_ASTRO%TYPE,
+        p_nacao IN NACAO.NOME%TYPE
+    );
+    
+    PROCEDURE adicionar_federacao (
+        p_nacao IN NACAO.NOME%TYPE,
+        p_federacao IN FEDERACAO.NOME%TYPE
+    );
 
-    IF v_count = 0 THEN
-        RAISE ex_nacao_nao_encontrada;
-    END IF;
-
-    -- Verificar se o planeta não está sendo dominado por ninguém
-    SELECT COUNT(*)
-    INTO v_count
-    FROM DOMINANCIA
-    WHERE PLANETA = p_planeta AND (DATA_FIM IS NULL OR DATA_FIM >= SYSDATE);
-
-    IF v_count > 0 THEN
-        RAISE ex_planeta_ja_dominado;
-    END IF;
-
-    -- Inserir a nova dominância
-    INSERT INTO DOMINANCIA (PLANETA, NACAO, DATA_INI, DATA_FIM)
-    VALUES (p_planeta, p_nacao, p_data_ini, p_data_fim);
-    DBMS_OUTPUT.PUT_LINE('Dominância inserida com sucesso.');
-
-EXCEPTION
-    WHEN ex_planeta_nao_encontrado THEN
-        RAISE_APPLICATION_ERROR(-20001, 'Erro: O planeta especificado não existe.');
-    WHEN ex_planeta_ja_dominado THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Erro: O planeta já está sendo dominado.');
-    WHEN ex_nacao_nao_encontrada THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Erro: A nação especificada não existe.');
-    WHEN OTHERS THEN
-        RAISE_APPLICATION_ERROR(-20004, 'Erro desconhecido: ' || SQLERRM);
-END;
+END pacote_comandante;
 /
-------------------------------------------------------- 3.a.i Incluir propria nação de uma federação existente ---------------------------------------------
-CREATE OR REPLACE PROCEDURE IncluirNacaoFederacao(
-    v_nacao nacao.NOME%TYPE,
-    v_federacao federacao.NOME%TYPE
-) AS
-    ex_nacao_nao_encontrada EXCEPTION;
-    ex_federacao_nao_encontrada EXCEPTION;
-    
-    PRAGMA EXCEPTION_INIT(ex_nacao_nao_encontrada, -20002);
-    PRAGMA EXCEPTION_INIT(ex_federacao_nao_encontrada, -20003);
 
-    v_count NUMBER;
-BEGIN
-    -- Verificar se a nação existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM NACAO
-    WHERE NOME = v_nacao;
-    DBMS_OUTPUT.PUT_LINE('estou aqui ');
-    
-    IF v_count = 0 THEN
-        RAISE ex_nacao_nao_encontrada;
-    END IF;
+-- Criação do corpo do pacote pacote_comandante
+CREATE OR REPLACE PACKAGE BODY pacote_comandante AS
 
-    -- Verificar se a federação existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM FEDERACAO
-    WHERE NOME = v_federacao;
-    
-    IF v_count = 0 THEN
-        RAISE ex_federacao_nao_encontrada;
-    END IF;
+    -- Procedure buscar_nacao_comandante
+    PROCEDURE buscar_nacao_comandante (
+        p_cpi IN LIDER.CPI%TYPE,
+        p_nacao OUT LIDER.NACAO%TYPE
+    )
+    IS
+    BEGIN
+        SELECT NACAO
+        INTO p_nacao
+        FROM LIDER
+        WHERE CPI = p_cpi
+            AND CARGO = 'COMANDANTE'; -- Filtra apenas os líderes com cargo de 'COMANDANTE'
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            p_nacao := NULL; -- Se nenhum dado for encontrado, retorna NULL
+    END buscar_nacao_comandante;
 
-    -- Incluir a nação na federação
-    UPDATE NACAO
-    SET FEDERACAO = v_federacao
-    WHERE NOME = v_nacao;
-
-    DBMS_OUTPUT.PUT_LINE('Nação incluída na federação com sucesso.');
-EXCEPTION
-    WHEN ex_nacao_nao_encontrada THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: Nação não encontrada.');
-    WHEN ex_federacao_nao_encontrada THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: Federação não encontrada.');
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: ' || SQLERRM);
-END IncluirNacaoFederacao;
-/
-------------------------------------------------------- 3.a.i Excluir propria nação de uma federação existente ---------------------------------------------
-
-
-CREATE OR REPLACE PROCEDURE ExcluirNacaoFederacao(
-    v_nacao nacao.NOME%TYPE
-) AS
-    ex_nacao_nao_encontrada EXCEPTION;
-
-    PRAGMA EXCEPTION_INIT(ex_nacao_nao_encontrada, -20002);
-
-    v_count NUMBER;
-BEGIN
-    -- Verificar se a nação existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM NACAO
-    WHERE NOME = v_nacao;
-    
-    IF v_count = 0 THEN
-        RAISE ex_nacao_nao_encontrada;
-    END IF;
-
-    -- Excluir a nação da federação
-    UPDATE NACAO
-    SET FEDERACAO = NULL
-    WHERE NOME = v_nacao;
-
-    DBMS_OUTPUT.PUT_LINE('Nação excluída da federação com sucesso.');
-EXCEPTION
-    WHEN ex_nacao_nao_encontrada THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: Nação não encontrada.');
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: ' || SQLERRM);
-END ExcluirNacaoFederacao;
-/
-------------------------------------------------------- 3.a.ii Criar nova federação com sua prpria nação ---------------------------------------------
-
-
-CREATE OR REPLACE PROCEDURE ManageFederation(
-    v_nacao nacao.NOME%TYPE,
-    v_federacao federacao.NOME%TYPE
-) AS
-    -- Exceções personalizadas
-    ex_nacao_nao_encontrada EXCEPTION;
-    ex_federacao_ja_existe EXCEPTION;
-
-    PRAGMA EXCEPTION_INIT(ex_nacao_nao_encontrada, -20002);
-    PRAGMA EXCEPTION_INIT(ex_federacao_ja_existe, -20005);
-
-    v_count NUMBER;
-BEGIN
-    -- Verificar se a nação existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM NACAO
-    WHERE NOME = v_nacao;
-    
-    IF v_count = 0 THEN
-        RAISE ex_nacao_nao_encontrada;
-    END IF;
-
-  
-    -- Verificar se a federação já existe
-    SELECT COUNT(*)
-    INTO v_count
-    FROM FEDERACAO
-    WHERE NOME = v_federacao;
+    -- Procedure remover_federacao
+    PROCEDURE remover_federacao (
+        p_nacao IN NACAO.NOME%TYPE
+    )
+    IS
+    BEGIN
+        UPDATE NACAO
+        SET FEDERACAO = NULL
+        WHERE NOME = p_nacao;
         
-    IF v_count > 0 THEN
-       RAISE ex_federacao_ja_existe;
-    END IF;
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END remover_federacao;
 
-    -- Criar nova federação
-     INSERT INTO FEDERACAO (NOME, DATA_FUND)
-     VALUES (v_federacao, SYSDATE);
+    -- Procedure adicionar_federacao
+    PROCEDURE adicionar_federacao (
+        p_nacao IN NACAO.NOME%TYPE,
+        p_federacao IN FEDERACAO.NOME%TYPE
+    )
+    IS
+        v_count NUMBER;
+    BEGIN
+        -- Verifica se a federação existe na tabela FEDERACAO
+        SELECT COUNT(*)
+        INTO v_count
+        FROM FEDERACAO
+        WHERE NOME = p_federacao;
 
-    -- Incluir a nação na nova federação
-    UPDATE NACAO
-    SET FEDERACAO = v_federacao
-    WHERE NOME = v_nacao;
+        IF v_count = 0 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'A federação especificada não existe.');
+        ELSE
+            UPDATE NACAO
+            SET FEDERACAO = p_federacao
+            WHERE NOME = p_nacao;
 
-    DBMS_OUTPUT.PUT_LINE('Operação realizada com sucesso.');
-   
-EXCEPTION
-    WHEN ex_nacao_nao_encontrada THEN
-        Raise appl('Erro: Nação não encontrada.');
-    WHEN ex_federacao_ja_existe THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: Federação já existe.');
-    WHEN OTHERS THEN
-        DBMS_OUTPUT.PUT_LINE('Erro: ' || SQLERRM);
-END ManageFederation;
+            COMMIT;
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END adicionar_federacao;
+
+    -- Procedure inserir_dominancia
+    PROCEDURE inserir_dominancia (
+        p_planeta IN PLANETA.ID_ASTRO%TYPE,
+        p_nacao IN NACAO.NOME%TYPE
+    )
+    IS
+        v_count NUMBER;
+    BEGIN
+        -- Verifica se já existe dominância ativa para o planeta
+        SELECT COUNT(*)
+        INTO v_count
+        FROM DOMINANCIA
+        WHERE PLANETA = p_planeta
+          AND DATA_FIM > SYSDATE;
+
+        IF v_count > 0 THEN
+            RAISE_APPLICATION_ERROR(-20001, 'Já existe dominância ativa para este planeta.');
+        ELSE
+            -- Insere novo registro de dominância
+            INSERT INTO DOMINANCIA (PLANETA, NACAO, DATA_INI, DATA_FIM)
+            VALUES (p_planeta, p_nacao, SYSDATE, NULL);
+
+            COMMIT;
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END inserir_dominancia;
+
+END pacote_comandante;
 /
