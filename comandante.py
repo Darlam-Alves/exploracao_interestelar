@@ -36,7 +36,7 @@ def insert_dominancia(connection, planeta, nacao, data_ini, data_fim):
         cursor.callproc("DBMS_OUTPUT.ENABLE")
         oficial_script_path = "funcionalidades/comandante.sql"
         execute_sql_script(oficial_script_path, connection)
-        cursor.callproc("INSERT_DOMINANCIA", (planeta, nacao, data_ini, data_fim))
+        cursor.callproc("pacote_comandante.inserir_dominancia", (planeta, nacao, data_ini, data_fim))
         cursor.execute(plsql_block)
         status_var = cursor.var(cx_Oracle.NUMBER)
         line_var = cursor.var(cx_Oracle.STRING)

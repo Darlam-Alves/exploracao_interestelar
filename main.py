@@ -21,8 +21,8 @@ def main_menu():
     return choice
 
 def login(connection):
-    id_lider = '000.000.000-01'  # Remove espaços em branco antes e depois
-    password = '7C6A180B36896A0A8C02787EEAFB0E4C'  # Remove espaços em branco antes e depois
+    id_lider = '000.000.000-10'  # Remove espaços em branco antes e depois
+    password = '87E897E3B54A405DA144968B2CA19B45'  # Remove espaços em branco antes e depois
 
     cursor = connection.cursor()
     try:
@@ -134,36 +134,34 @@ if __name__ == "__main__":
 
                 elif cargo and cargo.strip().upper() == 'COMANDANTE':
                     print("Menu COMANDANTE:")
-                    choice = main_menu()
-                    if choice == '2':
-                        while True:
-                            print("1. Executar relatório de comandante")
-                            print("2. Inserir dominância em planeta não dominado")
-                            print("3. Incluir federação em nação [não está pronto]")
-                            print("4. Excluir federação em nação [não está pronto]")
-                            print("0. Voltar para o menu anterior")
-                            sub_choice = input("Digite o número correspondente à função: ")
+                    while True:
+                        print("1. Executar relatório de comandante")
+                        print("2. Inserir dominância em planeta não dominado")
+                        print("3. Incluir federação em nação [não está pronto]")
+                        print("4. Excluir federação em nação [não está pronto]")
+                        print("0. Voltar para o menu anterior")
+                        sub_choice = input("Digite o número correspondente à função: ")
 
-                            if sub_choice == '1':
-                                execute_comandante_report(connection, '000.000.000-08')
-                            elif sub_choice == '2':
-                                planeta = input("Digite o nome do planeta: ").strip()
-                                nacao = input("Digite o nome da nação: ").strip()
-                                data_ini = input("Digite a data de início (DD/MM/YYYY): ").strip()
-                                data_fim = input("Digite a data de fim (DD/MM/YYYY): ").strip()
-                                insert_dominancia(connection, planeta, nacao, data_ini, data_fim)
-                            elif sub_choice == '3':
-                                nacao = 'Natus ut rem.'
-                                federacao = 'Eos ab quam.'
-                                incluir_nacao_federacao(connection, nacao, federacao)
-                            elif sub_choice == '4':
-                                nacao = 'Natus ut rem.'
-                                federacao = 'Eos ab quam.'
-                                excluir_nacao_federacao(connection, nacao)
-                            elif sub_choice == '0':
-                                break
-                            else:
-                                print("Opção inválida")
+                        if sub_choice == '1':
+                            execute_comandante_report(connection, '000.000.000-08')
+                        elif sub_choice == '2':
+                            planeta = input("Digite o nome do planeta: ").strip()
+                            nacao = input("Digite o nome da nação: ").strip()
+                            data_ini = input("Digite a data de início (DD/MM/YYYY): ").strip()
+                            data_fim = input("Digite a data de fim (DD/MM/YYYY): ").strip()
+                            insert_dominancia(connection, planeta, nacao, data_ini, data_fim)
+                        elif sub_choice == '3':
+                            nacao = 'Natus ut rem.'
+                            federacao = 'Eos ab quam.'
+                            incluir_nacao_federacao(connection, nacao, federacao)
+                        elif sub_choice == '4':
+                            nacao = 'Natus ut rem.'
+                            federacao = 'Eos ab quam.'
+                            excluir_nacao_federacao(connection, nacao)
+                        elif sub_choice == '0':
+                            break
+                        else:
+                            print("Opção inválida")
 
                 elif cargo and cargo.strip().upper() == 'OFICIAL':
                     print("Menu OFICIAL:")
